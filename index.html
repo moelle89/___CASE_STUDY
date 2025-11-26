@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family:Inter, system-ui;
+            background:linear-gradient(0deg,#0c0e11 0%, #161922 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 80px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            perspective: 1000px;
+        }
+
+        .video-item {
+            position: relative;
+            aspect-ratio: 9/16;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+        }
+
+        .video-item.visible {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .video-item:nth-child(1) {
+            animation-delay: 0.15s;
+        }
+
+        .video-item:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .video-item:nth-child(3) {
+            animation-delay: 0.45s;
+        }
+
+        .video-item:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+
+        .video-item:nth-child(5) {
+            animation-delay: 0.75s;
+        }
+
+        .video-item:nth-child(6) {
+            animation-delay: 0.9s;
+        }
+
+        .video-item:nth-child(7) {
+            animation-delay: 1.05s;
+        }
+
+        .video-item:nth-child(8) {
+            animation-delay: 1.2s;
+        }
+
+        .video-item:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+            filter: brightness(0.7);
+        }
+
+        .video-item:hover .video-thumbnail {
+            transform: scale(1.1);
+            filter: brightness(0.5);
+        }
+
+        .play-overlay{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      width:78px; height:78px; border-radius:82px;
+      background:rgba(255,255,255,0.12); backdrop-filter:blur(8px);
+      display:grid; place-items:center; transition:transform .2s ease;
+    }
+
+        .video-item:hover .play-overlay {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .play-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .play-icon::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 25px solid #ffffff;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            margin-left: 5px;
+        }
+
+        .video-item:hover .play-icon {
+            transform: scale(1.2);
+        }
+
+        .hover-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .hover-tooltip.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .hover-tooltip h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #f0a93f;
+        }
+
+        .hover-tooltip p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: background 0.4s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            background: rgba(0, 0, 0, 0.95);
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90vh;
+            opacity: 0;
+            transform: scale(0.8) translateY(30px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .lightbox.active .lightbox-content {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .lightbox video {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: rgb(55, 58, 61);
+            color: #eec042;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .close-btn:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 15px;
+            }
+
+            .header {
+                margin-bottom: 50px;
+            }
+
+            .video-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .hover-tooltip {
+                display: none;
+            }
+
+            .video-item {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .lightbox-content {
+                max-width: 95%;
+            }
+
+            .close-btn {
+                top: -45px;
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .video-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="mainTitle"></h1>
+            <p id="mainSubtext"></p>
+        </div>
+
+        <div class="video-grid" id="videoGrid"></div>
+    </div>
+
+    <div class="hover-tooltip" id="hoverTooltip">
+        <h3 id="tooltipTitle"></h3>
+        <p id="tooltipDescription"></p>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-content">
+            <button class="close-btn" id="closeBtn">×</button>
+            <video id="lightboxVideo" controls></video>
+        </div>
+    </div>
+
+    <script>
+        // Load JSON data from external file
+        let contentData = null;
+
+        async function loadContent() {
+            try {
+                const response = await fetch('data.json');
+                const data = await response.json();
+                contentData = data;
+                initializePage();
+            } catch (error) {
+                console.error('Error loading data.json:', error);
+                // Fallback content if JSON fails to load
+                contentData = {
+                    page: {
+                        title: "Stunning Video Collection",
+                        subtitle: "Explore our curated selection of breathtaking moments"
+                    },
+                    videos: []
+                };
+                initializePage();
+            }
+        }
+
+        function initializePage() {
+            // Initialize page
+            document.getElementById('mainTitle').textContent = contentData.page.title;
+            document.getElementById('mainSubtext').textContent = contentData.page.subtitle;
+            createVideoGrid();
+            setupParallax();
+            setupIntersectionObserver();
+        }
+
+        function createVideoGrid() {
+
+            const videoGrid = document.getElementById('videoGrid');
+            const tooltip = document.getElementById('hoverTooltip');
+            const tooltipTitle = document.getElementById('tooltipTitle');
+            const tooltipDescription = document.getElementById('tooltipDescription');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxVideo = document.getElementById('lightboxVideo');
+            const closeBtn = document.getElementById('closeBtn');
+
+            // Create video items
+            contentData.videos.forEach(video => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                videoItem.innerHTML = `
+                <video class="video-thumbnail" preload="metadata" muted playsinline>
+                    <source src="${video.src}#t=0.1" type="video/mp4">
+                </video>
+                <div class="play-overlay">
+                    <div class="play-icon"></div>
+                </div>
+            `;
+
+                // Hover tooltip
+                videoItem.addEventListener('mouseenter', () => {
+                    tooltipTitle.textContent = video.title;
+                    tooltipDescription.textContent = video.desc;
+                    tooltip.classList.add('active');
+                });
+
+                videoItem.addEventListener('mouseleave', () => {
+                    tooltip.classList.remove('active');
+                });
+
+                videoItem.addEventListener('mousemove', (e) => {
+                    tooltip.style.left = e.clientX + 'px';
+                    tooltip.style.top = e.clientY + 'px';
+                });
+
+                // Click to play
+                videoItem.addEventListener('click', () => {
+                    lightbox.style.display = 'flex';
+                    setTimeout(() => {
+                        lightbox.classList.add('active');
+                        lightboxVideo.src = video.src;
+                        setTimeout(() => lightboxVideo.play(), 100);
+                    }, 10);
+                });
+
+                videoGrid.appendChild(videoItem);
+            });
+        }
+
+        // Close lightbox
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            lightboxVideo.pause();
+            setTimeout(() => {
+                lightbox.style.display = 'none';
+                lightboxVideo.src = '';
+            }, 400);
+        }
+
+        closeBtn.addEventListener('click', closeLightbox);
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        // Parallax scroll effect
+        function setupParallax() {
+            window.addEventListener('scroll', () => {
+                const scrolled = window.pageYOffset;
+                const videoItems = document.querySelectorAll('.video-item');
+
+                videoItems.forEach((item, index) => {
+                    const speed = (index % 2 === 0) ? 0.3 : -0.3;
+                    const yPos = scrolled * speed;
+                    item.style.transform = `translateY(${yPos}px)`;
+                });
+            });
+        }
+
+        // Intersection Observer for fade-in animation
+        function setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.video-item').forEach(item => {
+                observer.observe(item);
+            });
+        }
+
+        // Load content when page loads
+        loadContent();
+    </script>
+</body>
+
+</html>
